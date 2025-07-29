@@ -1,31 +1,47 @@
 import requests
 
 def get_weather(city_name, api_key):
-    base_url = "http://api.openweathermap.org/data/2.5/weather?"
-    full_url = f"{base_url}q={city_name}&appid={api_key}&units=metric"
+    base_url = "https://api.openweathermap.org/data/2.5/weather"
+    params = {
+        "q": city_name,
+        "appid": api_key,
+        "units": "metric"
+    }
 
-    response = requests.get(full_url)
-    data = response.json()
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        data = response.json()
 
-    print(data)  # 👈 ADD THIS LINE RIGHT HERE to see the full API response
-
-    if data.get("cod") != 404:
         weather_info = data.get("main", {})
-        temperature = weather_info.get("temp")
-        pressure = weather_info.get("pressure")
-        humidity = weather_info.get("humidity")
-        description = data.get("weather", [{}])[0].get("description", "No description")
+        temperature = weather_info.get("temp", "N/A")
+        pressure = weather_info.get("pressure", "N/A")
+        humidity = weather_info.get("humidity", "N/A")
+
+        weather_list = data.get("weather")
+        if weather_list and isinstance(weather_list, list) and len(weather_list) > 0:
+            description = weather_list[0].get("description", "No description")
+        else:
+            description = "No description"
 
         print(f"\nWeather in {city_name.title()}:")
         print(f"🌡 Temperature: {temperature}°C")
         print(f"💧 Humidity: {humidity}%")
         print(f"🧭 Pressure: {pressure} hPa")
         print(f"☁ Description: {description}")
-    else:
-        print("❌ City not found!")
 
-# Replace with your OpenWeatherMap API key
-api_key = "661a9591c3344072b9781844251507"
+    except requests.exceptions.HTTPError as e:
+        if response.status_code == 401:
+            print("❌ Unauthorized: Check your API key.")
+        elif response.status_code == 404:
+            print("❌ City not found!")
+        else:
+            print(f"⚠ HTTP error occurred: {e}")
+    except Exception as e:
+        print(f"⚠ An error occurred: {e}")
 
-city = input("Enter city name: ")
+
+api_key = "c020e3d2677a33793715ca637b369481"
+
+city = input("Enter city name: ").strip()
 get_weather(city, api_key)
